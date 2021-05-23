@@ -76,6 +76,14 @@
    ;; the bounds, indicating they might be caused by a bug
    (cross-edges :accessor cross-edges :initform nil)))
 
+(defmethod initialize-instance :after ((o voronoi-state) &key)
+  (when (sites o)
+    (let ((n (length (sites o))))
+      ;; #edges < 3n-6
+      (adjust-array (edges o) (* 3 n))
+      ;; #vertices < 2n-5
+      (adjust-array (vertices o) (* 2 n)))))
+
 (defun peek-next-event (state)
   (declare (optimize speed))
   (cond
