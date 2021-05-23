@@ -41,26 +41,32 @@
       ((= (py right) y)
        (values (px right) :=r (px left)))
       (t ;; general case
-       (multiple-value-bind (l r)
-           (intersect-quadratic (quadratic left y)
-                                (quadratic right y))
-         (if r
-             ;; 2 solutions, pick depending on direction of edge
-             (let ((d (edge-type edge)))
-               (declare (type (integer -2 2) d))
-               ;; shouldn't have 2 solutions, and should only be 0 in
-               ;; cases where the equal y-coord case above would have
-               ;; handled it already
-               (assert (not (zerop d)))
-               (if (minusp d)
-                   (values (min r l) :l (max r l))
-                   (values (max r l) :r (min r l))))
-             ;; single solution
-             (progn
-               ;; should only happen for vertical edges, which should
-               ;; have been handled by equal y-coord case already
-               (break "shouldn't get here? ~s ~s" l r)
-               l)))))))
+       (let* ((t1 (make-array 3 :element-type 'double-float))
+              (t2 (make-array 3 :element-type 'double-float))
+              (q1 (%quadratic left y t1))
+              (q2 (%quadratic right y t2)))
+         (declare (type (simple-array double-float (3)) t1 t2)
+                  (dynamic-extent t1 t2))
+        (multiple-value-bind (l r)
+            (intersect-quadratic q1 q2)
+          (declare (type (or null double-float) l r))
+          (if r
+              ;; 2 solutions, pick depending on direction of edge
+              (let ((d (edge-type edge)))
+                (declare (type (integer -2 2) d))
+                ;; shouldn't have 2 solutions, and should only be 0 in
+                ;; cases where the equal y-coord case above would have
+                ;; handled it already
+                (assert (not (zerop d)))
+                (if (minusp d)
+                    (values (min r l) :l (max r l))
+                    (values (max r l) :r (min r l))))
+              ;; single solution
+              (progn
+                ;; should only happen for vertical edges, which should
+                ;; have been handled by equal y-coord case already
+                (break "shouldn't get here? ~s ~s" l r)
+                l))))))))
 
 (defun before-edge-p (edge x y)
   (cond

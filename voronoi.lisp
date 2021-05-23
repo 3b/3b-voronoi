@@ -118,6 +118,8 @@
     (values a b)))
 
 (defun split-arc (state a b site)
+  (declare (type point site)
+           (optimize speed))
   (when *dump*
     (format t "insert ~s between ~s,~s~%" site a b)
     (when a
@@ -131,6 +133,7 @@
     (assert (or (and (right-focus a) (left-focus b))))
     (assert (eql (right-focus a) (left-focus b))))
   (let ((hit (if a (right-focus a) (left-focus b))))
+    (declare (type point hit))
     (cond
       ;; if focuses have same Y coordinate, we don't want to actually
       ;; split the hit arc, since there is only 1 intersection between
@@ -142,8 +145,9 @@
             (format t "  insert down edge left~%"))
           (let* ((l (left-focus a))
                  (mid (midpoint hit site))
+                 (bmin (bmin state))
                  ;; start ray at bounds
-                 (start (dp (px mid) (py (bmin state))))
+                 (start (dp (px mid) (py bmin)))
                  (e1 (make-instance 'sweep-table-node
                                     :left-focus l
                                     :right-focus site
@@ -161,6 +165,7 @@
                                     :dir (dp 0d0 1d0)
                                     :back start
                                     :edge-type 0)))
+            (declare (type point l bmin))
             (insert-before e1 b)
             (insert-before e2 b)
             (delete-node a)
@@ -170,8 +175,9 @@
             (format t "  insert down edge right~%"))
           (let* ((r (right-focus b))
                  (mid (midpoint hit site))
+                 (bmax (bmax state))
                  ;; start ray at bounds
-                 (start (dp (px mid) (py (bmax state))))
+                 (start (dp (px mid) (py bmax)))
                  (e1 (make-instance 'sweep-table-node
                                     :left-focus hit
                                     :right-focus site
@@ -189,6 +195,7 @@
                                            (bisector-dir site r))
                                     :back start
                                     :edge-type 1)))
+            (declare (type point r bmax))
             (delete-node b)
             (let ((n2 (insert-after e2 a))
                   (n1 (insert-after e1 a)))
@@ -197,9 +204,13 @@
           (error "duplicate sites ~s ~s?" site hit))))
       ;; normal case, split HIT and add left/right arcs for new site
       (t
-       (let* ((q (quadratic hit (py site)))
+       (let* ((qq (make-array 3 :element-type 'double-float))
+              (q (%quadratic hit (py site) qq))
               (x (px site))
               (y (eval-quadratic q x)))
+         (declare (type (simple-array double-float (3)) qq q)
+                  (dynamic-extent qq)
+                  (type single-float x))
          (multiple-value-bind (le re) (make-edge-pair hit site (dp x y))
            (if a
                (values (insert-after le a)

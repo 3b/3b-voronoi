@@ -57,9 +57,14 @@
       (and (= (py a) (py b))
            (< (px a) (px b)))))
 
-(defun quadratic (a1 yd)
+(declaim (inline quadratic-tmp))
+(defun quadratic-tmp ()
+  (make-array 3 :element-type 'double-float))
+
+(defun %quadratic (a1 yd q)
   (declare (type point a1)
-           (optimize speed))
+           (optimize speed)
+           (type (simple-array double-float (3)) q))
   (let ((yd (coerce yd 'double-float))
         (xf (coerce (px a1) 'double-float))
         (yf (coerce (py a1) 'double-float)))
@@ -83,8 +88,17 @@
                (a c1)
                (b (* -2 c1 xf))
                (c (+ c2 (* (expt xf 2) c1))))
-          (make-array 3 :element-type 'double-float
+          (declare (type double-float c1 c2))
+          (setf (aref q 0) a)
+          (setf (aref q 1) b)
+          (setf (aref q 2) c)
+          q
+          #++(make-array 3 :element-type 'double-float
                         :initial-contents (list a b c))))))
+
+(declaim (inline quadratic))
+(defun quadratic (a1 yd)
+  (%quadratic a1 yd (quadratic-tmp)))
 
 (declaim (inline eval-quadratic))
 (defun eval-quadratic (q x)
