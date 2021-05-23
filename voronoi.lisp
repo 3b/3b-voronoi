@@ -112,13 +112,15 @@
   (let* ((mid (midpoint hit site))
          (dir (bisector-dir hit site))
          (-dir (dp (- (px dir)) (- (py dir))))
-         (a (make-instance 'sweep-edge :left-focus hit :right-focus site
-                                       :ref mid :start start :dir dir
-                                       :edge-type -1))
-         (b (make-instance 'sweep-edge :left-focus site :right-focus hit
-                                       :ref mid :start start :dir -dir
-                                       :back a
-                                       :edge-type 1)))
+         (a (make-instance 'sweep-table-node
+                           :left-focus hit :right-focus site
+                           :ref mid :start start :dir dir
+                           :edge-type -1))
+         (b (make-instance 'sweep-table-node
+                           :left-focus site :right-focus hit
+                           :ref mid :start start :dir -dir
+                           :back a
+                           :edge-type 1)))
     (setf (slot-value a 'back) b)
     (values a b)))
 
@@ -149,7 +151,7 @@
                  (mid (midpoint hit site))
                  ;; start ray at bounds
                  (start (dp (px mid) (py (bmin state))))
-                 (e1 (make-instance 'sweep-edge
+                 (e1 (make-instance 'sweep-table-node
                                     :left-focus l
                                     :right-focus site
                                     :ref mid
@@ -158,7 +160,7 @@
                                            (bisector-dir l site))
                                     :back start
                                     :edge-type -1))
-                 (e2 (make-instance 'sweep-edge
+                 (e2 (make-instance 'sweep-table-node
                                     :left-focus site
                                     :right-focus hit
                                     :ref mid
@@ -177,7 +179,7 @@
                  (mid (midpoint hit site))
                  ;; start ray at bounds
                  (start (dp (px mid) (py (bmax state))))
-                 (e1 (make-instance 'sweep-edge
+                 (e1 (make-instance 'sweep-table-node
                                     :left-focus hit
                                     :right-focus site
                                     :ref mid
@@ -185,7 +187,7 @@
                                     :dir (dp 0d0 1d0)
                                     :back start
                                     :edge-type 0))
-                 (e2 (make-instance 'sweep-edge
+                 (e2 (make-instance 'sweep-table-node
                                     :left-focus site
                                     :right-focus r
                                     :ref mid
@@ -346,7 +348,7 @@
         (maybe-remove-circles (q state) r next)
         (delete-node l)
         (delete-node r)
-        (let ((new (make-instance 'sweep-edge
+        (let ((new (make-instance 'sweep-table-node
                                   :left-focus left-focus
                                   :right-focus right-focus
                                   :edge-type (if (point-order left-focus right-focus)
@@ -387,7 +389,7 @@
                                             :left-focus nil :right-focus site
                                             :tree-up table
                                             :edge-type -1))
-          (insert-after (make-instance 'sweep-edge
+          (insert-after (make-instance 'sweep-table-node
                                        :ref nil :dir nil
                                        :left-focus site :right-focus nil
                                        :edge-type 1)

@@ -41,10 +41,6 @@
   (when a (assert (eql b (next a))))
   (when b (assert (eql a (prev b))))
   (assert (or a b))
-  ;; not sure if callers should be passing a sweep-table-node or edge?
-  (when (typep edge 'sweep-edge)
-    ;; if passed a sweep edge, turn it into a sweep-table-node
-    (change-class edge 'sweep-table-node))
   ;; make sure node isn't in tree yet
   (assert (null (tree-up edge)))
   (assert (null (tree-left edge)))
