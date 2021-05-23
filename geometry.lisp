@@ -39,6 +39,7 @@
   (+ (expt (- (px a) (px b)) 2)
      (expt (- (py a) (py b)) 2)))
 
+(declaim (inline point-order))
 (defun point-order (a b)
   ;; descending Y, ascending X for now to match debugging display.
   ;; todo: test with other combinations
@@ -48,7 +49,7 @@
 
 (defun quadratic (a1 yd)
   (declare (type point a1)
-           #++(optimize speed))
+           (optimize speed))
   (let ((yd (coerce yd 'double-float))
         (xf (coerce (px a1) 'double-float))
         (yf (coerce (py a1) 'double-float)))
@@ -81,6 +82,7 @@
        (* x (aref q 1))
        (aref q 2))))
 
+(declaim (inline intersect-quadratic))
 (defun intersect-quadratic (q1 q2)
   (declare (type (or double-float (simple-array double-float (3))) q1 q2)
            (optimize speed))

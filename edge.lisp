@@ -21,9 +21,13 @@
 
 
 (defun intersect-edge (edge y)
+  (declare (optimize speed))
   (assert (and (left-focus edge) (right-focus edge)))
-  (let ((left (left-focus edge))
-        (right (right-focus edge)))
+  (let* ((y (coerce y 'double-float))
+         (left (left-focus edge))
+         (right (right-focus edge)))
+    (declare (type point left right)
+             (type double-float y))
     (cond
       ((= (py left) (py right))
        ;; if both focus have same Y coord, intersection is always
@@ -43,6 +47,7 @@
          (if r
              ;; 2 solutions, pick depending on direction of edge
              (let ((d (edge-type edge)))
+               (declare (type (integer -2 2) d))
                ;; shouldn't have 2 solutions, and should only be 0 in
                ;; cases where the equal y-coord case above would have
                ;; handled it already
