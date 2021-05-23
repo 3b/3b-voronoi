@@ -102,6 +102,9 @@
      (q:dequeue (q state)))))
 
 (defun make-edge-pair (hit site start)
+  (declare (type point hit site)
+           (type dpoint start)
+           (optimize speed))
   (let* ((mid (midpoint hit site))
          (dir (bisector-dir hit site))
          (-dir (dp (- (px dir)) (- (py dir))))
