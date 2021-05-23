@@ -92,9 +92,7 @@
           (setf (aref q 0) a)
           (setf (aref q 1) b)
           (setf (aref q 2) c)
-          q
-          #++(make-array 3 :element-type 'double-float
-                        :initial-contents (list a b c))))))
+          q))))
 
 (declaim (inline quadratic))
 (defun quadratic (a1 yd)
