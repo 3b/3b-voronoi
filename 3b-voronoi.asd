@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Bart Botta <00003b at gmail.com>"
   :license "MIT"
-  :depends-on (alexandria damn-fast-updatable-priority-queue)
+  :depends-on (alexandria damn-fast-updatable-priority-queue float-features)
   :serial t
   :components ((:file "package")
                (:file "util")
