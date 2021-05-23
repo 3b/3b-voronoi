@@ -213,8 +213,9 @@
                (eql (right-focus a) (left-focus b))
                (right-focus b)))
   (let ((center (intersect-rays a b)))
+    (declare (type dpoint center))
     (when center
-      (let* ((r (dist center (right-focus a)))
+      (let* ((r (dist center (the point (right-focus a))))
              (y (- (py center) r)))
         (make-instance 'circle-event
                        :pe (dp (px center) y)
@@ -409,7 +410,10 @@
 (defun handle-circle (state circle))
 
 (defun make-voronoi-state (points)
-  (let* ((sites (coerce (sort (copy-seq points) 'point-order) 'list))
+  (let* ((points2 (map 'vector (lambda (a)
+                                 (p (px a) (py a)))
+                       points))
+         (sites (coerce (sort points2 'point-order/p) 'list))
          (bmin (p (reduce 'min sites :key 'px)
                   (reduce 'min sites :key 'py)))
          (bmax (p (reduce 'max sites :key 'px)

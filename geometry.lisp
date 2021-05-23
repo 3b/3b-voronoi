@@ -31,6 +31,7 @@
 (defun (setf dpy) (n a) (setf (aref a 1) n))
 
 
+(declaim (inline dist dist^2))
 (defun dist (a b)
   (sqrt (+ (expt (- (px a) (px b)) 2)
            (expt (- (py a) (py b)) 2))))
@@ -41,6 +42,15 @@
 
 (declaim (inline point-order))
 (defun point-order (a b)
+  ;; descending Y, ascending X for now to match debugging display.
+  ;; todo: test with other combinations
+  (or (> (py a) (py b))
+      (and (= (py a) (py b))
+           (< (px a) (px b)))))
+
+(defun point-order/p (a b)
+  (declare (type point a b)
+           (optimize speed))
   ;; descending Y, ascending X for now to match debugging display.
   ;; todo: test with other combinations
   (or (> (py a) (py b))
@@ -76,6 +86,7 @@
           (make-array 3 :element-type 'double-float
                         :initial-contents (list a b c))))))
 
+(declaim (inline eval-quadratic))
 (defun eval-quadratic (q x)
   (let ((x2 (* x x)))
     (+ (* x2 (aref q 0))
@@ -116,7 +127,7 @@
       (declare (type double-float a1 b1 c1 a2 b2 c2 a3 b3 c3))
       (qf a3 b3 c3))))
 
-
+(declaim (inline midpoint bisector-dir))
 (defun midpoint (a b)
   (dp (+ (* 0.5d0 (px a)) (* 0.5 (px b)))
       (+ (* 0.5d0 (py a)) (* 0.5 (py b)))))
@@ -141,6 +152,8 @@
 
 
 (defun need-circle (a b c)
+  (declare (type point a b c)
+           (optimize speed))
   (when (eql a c)
     ;; arc formed by B can't collapse if arcs on either side are from
     ;; same site
@@ -156,6 +169,7 @@
     (minusp a)))
 
 (defun intersect-rays (a b)
+  (declare (optimize speed))
   (let* ((p1 (ref a))
          (p2 (ref b))
          (d1 (dir a))
@@ -180,6 +194,7 @@
          (x3y4 (* x3 y4))
          (y3x4 (* y3 x4))
          (x3y4-y3x4 (- x3y4 y3x4)))
+    (declare (type dpoint p1 p2 d1 d2))
     (unless (zerop d)
       (let ((x (/ (- (* x1y2-y1x2 x3-x4)
                      (* x1-x2 x3y4-y3x4))
