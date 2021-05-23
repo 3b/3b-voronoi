@@ -165,7 +165,8 @@
                                     :dir (dp 0d0 1d0)
                                     :back start
                                     :edge-type 0)))
-            (declare (type point l bmin))
+            (declare (type point bmin)
+                     (type (or point null) l))
             (insert-before e1 b)
             (insert-before e2 b)
             (delete-node a)
@@ -195,7 +196,8 @@
                                            (bisector-dir site r))
                                     :back start
                                     :edge-type 1)))
-            (declare (type point r bmax))
+            (declare (type point bmax)
+                     (type (or null point) r))
             (delete-node b)
             (let ((n2 (insert-after e2 a))
                   (n1 (insert-after e1 a)))
