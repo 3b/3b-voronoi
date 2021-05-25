@@ -72,6 +72,8 @@
                                                        :fill-pointer 0))
    (edges :reader edges :initform (make-array 16 :adjustable t
                                                  :fill-pointer 0))
+   ;; rays known to be (half-) infinite, to be finished in finish-edges
+   (infinite-tmp :accessor infinite-tmp :initform nil)
    ;; list of suspicious edges that go to infinity but cross most of
    ;; the bounds, indicating they might be caused by a bug
    (cross-edges :accessor cross-edges :initform nil)))
@@ -158,7 +160,7 @@
                  (mid (midpoint hit site))
                  (bmin (bmin state))
                  ;; start ray at bounds
-                 (start (dp (px mid) (py bmin)))
+                 (start nil #++(dp (px mid) (py bmin)))
                  (e1 (make-instance 'sweep-table-node
                                     :left-focus l
                                     :right-focus site
@@ -189,7 +191,7 @@
                  (mid (midpoint hit site))
                  (bmax (bmax state))
                  ;; start ray at bounds
-                 (start (dp (px mid) (py bmax)))
+                 (start nil #++(dp (px mid) (py bmax)))
                  (e1 (make-instance 'sweep-table-node
                                     :left-focus hit
                                     :right-focus site
@@ -320,21 +322,24 @@
     (setf (right-circle a) nil)
     (setf (left-circle b) nil)))
 
-(defun end-ray (state ray at)
-  (assert (not (end ray)))
-  (setf (end ray) at)
+(defun %end-ray (state ray)
   (etypecase (back ray)
-    (null
-     (break "no back on ray ~s?" ray))
     ((or point dpoint)
-     (let ((i (vector-push-extend at (vertices state)))
+     (let ((i (vector-push-extend (end ray) (vertices state)))
            (j (vector-push-extend (back ray) (vertices state))))
        (vector-push-extend (list i j) (edges state))))
     (sweep-edge
      (when (end (back ray))
-       (let ((i (vector-push-extend at (vertices state)))
+       (let ((i (vector-push-extend (end ray) (vertices state)))
              (j (vector-push-extend (end (back ray)) (vertices state))))
          (vector-push-extend (list i j) (edges state)))))))
+
+(defun end-ray (state ray at)
+  (assert (not (end ray)))
+  (setf (end ray) at)
+  (if (null (back ray))
+      (push ray (infinite-tmp state))
+      (%end-ray state ray)))
 
 (defun handle-circle (state circle)
   (declare (optimize speed)
@@ -451,6 +456,40 @@
     (make-instance 'voronoi-state :sites sites
                                   :bmin bmin :bmax bmax)))
 
+(defun clip-to-bounds (rx ry dx dy x1 y1 x2 y2)
+  (declare (type single-float x1 y1 x2 y2)
+           (type double-float rx ry dx dy)
+           (optimize speed))
+  (flet ((e (a b da db at)
+           (+ a (* (/ da db) (- at b)))))
+    (cond
+      ((and (zerop dx) (zerop dy))
+       (break "degenerate ray? dx ~s dy ~s" dx dy))
+      ((and (zerop dy) (minusp dx))
+       (dp x1 ry))
+      ((and (zerop dy) (plusp dx))
+       (dp x2 ry))
+
+      ((and (zerop dx) (minusp dy))
+       (dp rx y1))
+      ((and (zerop dx) (plusp dy))
+       (dp rx y2))
+
+      ((and (>= (abs dx) (abs dy))
+            (minusp dx))
+       (dp x1 (e ry rx dy dx x1)))
+      ((and (>= (abs dx) (abs dy))
+            (plusp dx))
+       (dp x2 (e ry rx dy dx x2)))
+
+      ((and (> (abs dy) (abs dx))
+            (minusp dy))
+       (dp (e rx ry dx dy y1) y1))
+      ((and (> (abs dy) (abs dx))
+            (plusp dy))
+       (dp (e rx ry dx dy y2) y2))
+      (t (break "?")))))
+
 (defun clip-ray (state ray x1 y1 x2 y2)
   (declare (optimize speed)
            (type single-float x1 y1 x2 y2))
@@ -551,6 +590,16 @@
               do (setf x2 (s x))
             when (> most-positive-single-float y y2)
               do (setf y2 (s y))))
+    (loop for r in (infinite-tmp state)
+          for b = (clip-to-bounds (px (ref r)) (py (ref r))
+                                  (px (dir r)) (py (dir r))
+                                  (- x1 100) (- y1 100) (+ x2 100) (+ y2 100))
+          do (setf (slot-value r 'start) b)
+             (setf (slot-value r 'back) b)
+             (if (end r)
+                 (%end-ray state r)
+                 (clip-ray state r x1 y1 x2 y2)))
+    (setf (infinite-tmp state) nil)
     (loop for e = (table-start (beachline state)) then (next e)
           while e
           for c = (clip-ray state e x1 y1 x2 y2)
